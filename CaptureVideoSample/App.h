@@ -8,7 +8,12 @@ public:
     App(winrt::Windows::UI::Composition::ContainerVisual const& root);
     ~App();
 
-    winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> StartRecordingAsync(
+    //winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> StartRecordingAsync(
+    //    winrt::Windows::Graphics::Capture::GraphicsCaptureItem const& item,
+    //    winrt::Windows::Graphics::SizeInt32 const& resolution,
+    //    uint32_t bitRate,
+    //    uint32_t frameRate);
+    winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::Streams::InMemoryRandomAccessStream> StartRecordingAsync(
         winrt::Windows::Graphics::Capture::GraphicsCaptureItem const& item,
         winrt::Windows::Graphics::SizeInt32 const& resolution,
         uint32_t bitRate,
@@ -23,4 +28,6 @@ private:
 
     winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DDevice m_device{ nullptr };
     std::unique_ptr<VideoRecordingSession> m_recordingSession;
+
+    winrt::Windows::Storage::Streams::InMemoryRandomAccessStream m_memory_stream{ nullptr };
 };

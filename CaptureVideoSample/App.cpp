@@ -8,6 +8,7 @@ namespace winrt
     using namespace Windows::Graphics;
     using namespace Windows::Graphics::Capture;
     using namespace Windows::Storage;
+    using namespace Windows::Storage::Streams;    
     using namespace Windows::UI::Composition;
 }
 
@@ -42,33 +43,40 @@ App::App(winrt::ContainerVisual const& root)
     auto d3dDevice = util::CreateD3DDevice();
     auto dxgiDevice = d3dDevice.as<IDXGIDevice>();
     m_device = CreateDirect3DDevice(dxgiDevice.get());
+
+    m_memory_stream = winrt::InMemoryRandomAccessStream();
 }
 
 App::~App()
 {
 }
 
-winrt::IAsyncOperation<winrt::StorageFile> App::StartRecordingAsync(
+//winrt::IAsyncOperation<winrt::StorageFile> App::StartRecordingAsync(
+//    winrt::GraphicsCaptureItem const& item,
+//    winrt::SizeInt32 const& resolution,
+//    uint32_t bitRate,
+//    uint32_t frameRate)
+winrt::IAsyncOperation<winrt::InMemoryRandomAccessStream> App::StartRecordingAsync(
     winrt::GraphicsCaptureItem const& item,
     winrt::SizeInt32 const& resolution,
     uint32_t bitRate,
     uint32_t frameRate)
 {
-    auto tempFolderPath = std::filesystem::temp_directory_path().wstring();
-    OutputDebugStringW(tempFolderPath.c_str());
-    auto tempFolder = co_await winrt::StorageFolder::GetFolderFromPathAsync(tempFolderPath);
-    auto appFolder = co_await tempFolder.CreateFolderAsync(L"CaptureVideoSample", winrt::CreationCollisionOption::OpenIfExists);
-    auto file = co_await appFolder.CreateFileAsync(L"tempRecording.mp4", winrt::CreationCollisionOption::GenerateUniqueName);
+    //auto tempFolderPath = std::filesystem::temp_directory_path().wstring();
+    //OutputDebugStringW(tempFolderPath.c_str());
+    //auto tempFolder = co_await winrt::StorageFolder::GetFolderFromPathAsync(tempFolderPath);
+    //auto appFolder = co_await tempFolder.CreateFolderAsync(L"CaptureVideoSample", winrt::CreationCollisionOption::OpenIfExists);
+    //auto file = co_await appFolder.CreateFileAsync(L"tempRecording.mp4", winrt::CreationCollisionOption::GenerateUniqueName);
 
     {
-        auto stream = co_await file.OpenAsync(winrt::FileAccessMode::ReadWrite);
+        //auto stream = co_await file.OpenAsync(winrt::FileAccessMode::ReadWrite);
         m_recordingSession = std::make_unique<VideoRecordingSession>(
             m_device,
             item,
             resolution,
             bitRate,
             frameRate, 
-            stream);
+            m_memory_stream);
 
         auto surface = m_recordingSession->CreatePreviewSurface(m_compositor);
         m_brush.Surface(surface);
@@ -76,7 +84,7 @@ winrt::IAsyncOperation<winrt::StorageFile> App::StartRecordingAsync(
         co_await m_recordingSession->StartAsync();
     }
 
-    co_return file;
+    co_return m_memory_stream;
 }
 
 void App::StopRecording()

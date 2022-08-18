@@ -10,6 +10,8 @@ namespace winrt
     using namespace Windows::Foundation::Metadata;
     using namespace Windows::Graphics;
     using namespace Windows::Graphics::Capture;
+    using namespace Windows::Storage;
+    using namespace Windows::Storage::Streams;
     using namespace Windows::Storage::Pickers;
     using namespace Windows::System;
 }
@@ -183,7 +185,8 @@ winrt::fire_and_forget MainWindow::StartRecording()
 
         OnRecordingStarted();
 
-        auto file = co_await m_app->StartRecordingAsync(item, resolution, bitRate, frameRate);
+        //auto file = co_await m_app->StartRecordingAsync(item, resolution, bitRate, frameRate);
+        auto stream = co_await m_app->StartRecordingAsync(item, resolution, bitRate, frameRate);
 
         auto filePicker = winrt::FileSavePicker();
         InitializeObjectWithWindowHandle(filePicker);
@@ -193,13 +196,33 @@ winrt::fire_and_forget MainWindow::StartRecording()
         filePicker.FileTypeChoices().Clear();
         filePicker.FileTypeChoices().Insert(L"MP4 Video", winrt::single_threaded_vector<winrt::hstring>({ L".mp4" }));
         auto destFile = co_await filePicker.PickSaveFileAsync();
+        //if (destFile == nullptr)
+        //{
+        //    co_await file.DeleteAsync();
+        //}
+        //else
+        //{
+        //    co_await file.MoveAndReplaceAsync(destFile);
+        //    co_await winrt::Launcher::LaunchFileAsync(destFile);
+        //}
         if (destFile == nullptr)
         {
-            co_await file.DeleteAsync();
+            stream.Close();
         }
         else
         {
-            co_await file.MoveAndReplaceAsync(destFile);
+            auto reader = winrt::DataReader(stream.GetInputStreamAt(0));
+            auto return_size = co_await reader.LoadAsync((uint32_t)stream.Size());
+            //reader.LoadAsync((uint32_t)stream.Size());
+            std::vector<unsigned char> buffer(return_size);
+            reader.ReadBytes(buffer);
+            
+            co_await winrt::FileIO::WriteBytesAsync(destFile, buffer);
+
+            // Stream Á¦°Å
+            co_await stream.FlushAsync();
+            stream.Close();
+
             co_await winrt::Launcher::LaunchFileAsync(destFile);
         }
         OnRecordingFinished();
